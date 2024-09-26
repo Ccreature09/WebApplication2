@@ -1,4 +1,6 @@
-﻿namespace WebApplication2.Models
+﻿using Microsoft.AspNetCore.Mvc.Rendering;
+
+namespace WebApplication2.Models
 {
     public class Item
     {
@@ -19,4 +21,6 @@
         GoodToHave,       // Item is good to have
         NotNecessary      // Item is not necessary
     }
+
+
 }

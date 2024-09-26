@@ -33,8 +33,7 @@ namespace WebApplication2.Controllers
                 return NotFound();
             }
 
-            var item = await _context.Items
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var item = await _context.Items.FirstOrDefaultAsync(m => m.Id == id);
             if (item == null)
             {
                 return NotFound();
@@ -46,24 +45,56 @@ namespace WebApplication2.Controllers
         // GET: Items/Create
         public IActionResult Create()
         {
-            return View();
+            var model = new CreateItemViewModel
+            {
+                Item = new Item(),
+                ItemTypes = Enum.GetValues(typeof(ImportanceType))
+                    .Cast<ImportanceType>()
+                    .Select(e => new SelectListItem
+                    {
+                        Value = e.ToString(),
+                        Text = e.ToString() // You can customize the display text if needed
+                    })
+            };
+
+            return View(model);
         }
 
         // POST: Items/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Name,Recipient,Supplier,Price,ItemType")] Item item)
+        public async Task<IActionResult> Create(CreateItemViewModel model)
         {
             if (ModelState.IsValid)
             {
+                // Create a new item from the model
+                var item = new Item
+                {
+                    Name = model.Item.Name,
+                    Recipient = model.Item.Recipient,
+                    Supplier = model.Item.Supplier,
+                    Price = model.Item.Price,
+                    ItemType = model.Item.ItemType // Ensure this matches your ViewModel property
+                };
+
                 _context.Add(item);
                 await _context.SaveChangesAsync();
+
                 return RedirectToAction(nameof(Index));
             }
-            return View(item);
+
+            // If model state is invalid, repopulate item types for the view
+            model.ItemTypes = Enum.GetValues(typeof(ImportanceType))
+                .Cast<ImportanceType>()
+                .Select(e => new SelectListItem
+                {
+                    Value = e.ToString(),
+                    Text = e.ToString()
+                });
+
+            return View(model);
         }
+
 
         // GET: Items/Edit/5
         public async Task<IActionResult> Edit(int? id)
@@ -82,8 +113,6 @@ namespace WebApplication2.Controllers
         }
 
         // POST: Items/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Recipient,Supplier,Price,ItemType")] Item item)
@@ -124,8 +153,7 @@ namespace WebApplication2.Controllers
                 return NotFound();
             }
 
-            var item = await _context.Items
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var item = await _context.Items.FirstOrDefaultAsync(m => m.Id == id);
             if (item == null)
             {
                 return NotFound();
