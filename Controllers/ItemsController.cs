@@ -7,16 +7,18 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using WebApplication2.Data;
 using WebApplication2.Models;
-
+using Microsoft.Extensions.Logging;
 namespace WebApplication2.Controllers
 {
     public class ItemsController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<ItemsController> _logger;
 
-        public ItemsController(ApplicationDbContext context)
+        public ItemsController(ApplicationDbContext context, ILogger<ItemsController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // GET: Items
@@ -48,17 +50,24 @@ namespace WebApplication2.Controllers
             var model = new CreateItemViewModel
             {
                 Item = new Item(),
-                ItemTypes = Enum.GetValues(typeof(ImportanceType))
-                    .Cast<ImportanceType>()
-                    .Select(e => new SelectListItem
-                    {
-                        Value = e.ToString(),
-                        Text = e.ToString() // You can customize the display text if needed
-                    })
+                ItemTypes = GetItemTypes() // Populate ItemTypes here
             };
 
             return View(model);
         }
+
+        // A method to get item types as SelectListItems
+        private List<SelectListItem> GetItemTypes()
+        {
+            return new List<SelectListItem>
+    {
+        new SelectListItem { Text = "Type 1", Value = "Type1" },
+        new SelectListItem { Text = "Type 2", Value = "Type2" },
+        new SelectListItem { Text = "Type 3", Value = "Type3" }
+        // Add more types as necessary
+    };
+        }
+
 
         // POST: Items/Create
         [HttpPost]
@@ -67,33 +76,36 @@ namespace WebApplication2.Controllers
         {
             if (ModelState.IsValid)
             {
-                // Create a new item from the model
-                var item = new Item
+                try
                 {
-                    Name = model.Item.Name,
-                    Recipient = model.Item.Recipient,
-                    Supplier = model.Item.Supplier,
-                    Price = model.Item.Price,
-                    ItemType = model.Item.ItemType // Ensure this matches your ViewModel property
-                };
+                    var item = new Item
+                    {
+                        Name = model.Item.Name,
+                        Recipient = model.Item.Recipient,
+                        Supplier = model.Item.Supplier,
+                        Price = model.Item.Price,
+                        ItemType = model.Item.ItemType // Directly using the string
+                    };
 
-                _context.Add(item);
-                await _context.SaveChangesAsync();
+                    _context.Add(item);
+                    await _context.SaveChangesAsync();
 
-                return RedirectToAction(nameof(Index));
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "An error occurred while creating an item.");
+                }
             }
-
-            // If model state is invalid, repopulate item types for the view
-            model.ItemTypes = Enum.GetValues(typeof(ImportanceType))
-                .Cast<ImportanceType>()
-                .Select(e => new SelectListItem
-                {
-                    Value = e.ToString(),
-                    Text = e.ToString()
-                });
+            else
+            {
+                _logger.LogWarning("ModelState is invalid: {Errors}",
+                    ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+            }
 
             return View(model);
         }
+
 
 
         // GET: Items/Edit/5

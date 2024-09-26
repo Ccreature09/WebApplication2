@@ -10,7 +10,6 @@ namespace WebApplication2.Data
         {
         }
 
-        // DbSet represents the Items table in the database
         public DbSet<Item> Items { get; set; }
     }
 }
